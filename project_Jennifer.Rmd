@@ -1,0 +1,104 @@
+---
+title: "project"
+author: "Jenniferpsy"
+date: "2017年6月27日"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load data
+```{r cars}
+unzip("C://Users//lenovo//Desktop//repdata_data_activity.zip",exdir="C://Users//lenovo//Desktop")
+data <- read.csv("C://Users//lenovo//Desktop//activity.csv")
+head(data)
+```
+
+## The mean and median of the total number of steps taken per day
+
+```{r pressure, echo=FALSE}
+sumstat<-tapply(data[,1],as.factor(data[,2]),sum)
+hist(sumstat,20,main="the total number of steps taken each day",xlab="total/day",ylab="frequency")
+meanstat<-mean(sumstat,na.rm=T);meanstat
+medianstat<-median(sumstat,na.rm=T);medianstat
+```
+
+So the mean of the total number of steps taken per day is 10766.19;  the median is 10765.
+
+## Average daily activity pattern
+```{r q3, echo=FALSE}
+m<-aggregate(steps~interval,data,mean,na.rm=T)
+plot(m[,1],m[,2],type="l",xlab="interval",ylab="the mean of steps")
+m[which(m[,2]==max(m[,2])),]
+```
+So on average across all the days, the 835th interval contains the maximum number of steps.
+
+##Imputing missing values
+####the total number of rows with NAs
+```{r q4, echo=FALSE}
+good<-complete.cases(data)
+gooddata<-data[good,]
+dim(gooddata)
+```
+So the total number of rows with NAs is 15264.
+
+####filling in all of the missing values
+There I will fill the NAs by using the mean for that 5-minute interval.
+```{r q5, echo=FALSE}
+newsteps=c()
+attach(data)
+for(i in 1:length(steps)){
+  if(is.na(steps[i])==T){
+    q=data[i,3]
+    newsteps[i]=m[which(interval==q),2][1]
+  }else{
+    newsteps[i]=steps[i]
+  }
+}
+newdata<-data[,-1]
+newdata$newsteps<-newsteps
+head(newdata)
+```
+#### The mean and median of the total number of steps taken per day for newdata
+```{r q6, echo=FALSE}
+newsumstat<-tapply(newdata[,3],as.factor(newdata[,1]),sum)
+hist(newsumstat,20,main="the total number of steps taken each day",xlab="total/day",ylab="frequency")
+newmeanstat<-mean(newsumstat,na.rm=T);newmeanstat
+newmedianstat<-median(newsumstat,na.rm=T);newmedianstat
+```
+
+So the mean of the total number of steps taken per day is 10766.19;  the median is 10766.19. 
+In conclusion, the mean does not change, but the median gets larger.
+
+## Explore difference between weekday and weekend
+```{r q7, echo=FALSE}
+attach(newdata)
+newdate=as.Date(newdata$date)
+a=weekdays(newdate)
+newdata$a<-a
+b=c()
+for(i in 1:dim(newdata)[1]){
+  if(newdata[i,4]=="星期六"|newdata[i,4]=="星期日"){
+    b[i]="weekend"
+  }
+  else{
+    b[i]="weekday"
+  }
+}
+newdata$indicator<-as.factor(b)
+head(newdata)
+
+```
+
+####A panel plot
+```{r q8, echo=FALSE}
+
+newdata$indicator<-as.factor(b)
+attach(newdata)
+mm<-aggregate(newsteps,by=list(indicator,interval),mean)
+library(lattice)
+xyplot(mm[,3]~ mm[,2]| mm[,1], data = mm, layout = c(1, 2),xlab="interval",ylab="the mean of steps",type="l")
+
+```
